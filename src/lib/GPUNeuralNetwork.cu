@@ -1,7 +1,7 @@
 #include "GPUNeuralNetwork.cuh"
 #include "SigmoidLayer.cuh"
 
-GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons) try : costFunction(costFunc), inputLayerNeurons{inputLayerNeurons} 
+GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), inputLayerNeurons{inputLayerNeurons}, learningRate{learningRate} 
     {
 
     }

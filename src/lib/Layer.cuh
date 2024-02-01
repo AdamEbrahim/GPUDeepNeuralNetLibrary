@@ -3,13 +3,14 @@
 class Layer { //interface for a NN layer
     private:
 
-    public:
-        Layer(int prevNumNeurons, int numNeurons) : weights{prevNumNeurons, numNeurons}, biases{1, numNeurons}, outputActivation{1, numNeurons}, inputError{1, numNeurons} {
-
-        }
+    protected:
+        Layer(int prevNumNeurons, int numNeurons);
         virtual ~Layer() = 0; //Destructor
         virtual void forwardPass(Matrix& prevLayerActivations) = 0;
         virtual void backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) = 0;
+
+    public:
+        void initializeMatrices();
 
         Matrix weights;
         Matrix biases;
@@ -17,6 +18,7 @@ class Layer { //interface for a NN layer
         Matrix inputError;
 
         int numberNeurons;
+        int prevLayerNumNeurons;
 
 };
 
