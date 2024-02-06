@@ -3,7 +3,7 @@
 
 class SigmoidLayer: public Layer {
     private:
-    __global__ void getActivation();
+    __global__ void getActivation(float* x);
 
     public:
         SigmoidLayer(int prevNumNeurons, int numNeurons);
