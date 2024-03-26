@@ -5,12 +5,12 @@ class Layer { //interface for a NN layer
 
     protected:
         Layer(int prevNumNeurons, int numNeurons);
-        virtual ~Layer() = 0; //Destructor
         virtual void forwardPass(Matrix& prevLayerActivations) = 0;
         virtual void backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) = 0;
 
     public:
         void initializeMatrices();
+        virtual ~Layer() = 0; //Destructor
 
         Matrix weights;
         Matrix biases;

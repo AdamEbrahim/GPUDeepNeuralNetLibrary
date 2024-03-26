@@ -24,12 +24,12 @@ void Layer::initializeMatrices() {
 
     cudaMemcpy(biases.valuesDevice, biases.valuesHost, biases.xDim * biases.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
-    //initialize weights to be random float [0-1]
+    //initialize weights to be random float
     //use a normal gaussian distribution, mean = 0, std_dev = 1 / sqrt(input_neurons). Weights can be negative.
     std::default_random_engine generator;
     std::normal_distribution<float> dist(0, 1.0 / sqrt(prevLayerNumNeurons)); 
     for (int i = 0; i < weights.xDim * weights.yDim; i++) {
-        weights.valuesHost[i] = dist(generator) * 0.1; //scale times 0.1 to get weight initialization between -1 and 1
+        weights.valuesHost[i] = dist(generator);
     }
 
     cudaMemcpy(weights.valuesDevice, weights.valuesHost, weights.xDim * weights.yDim * sizeof(float), cudaMemcpyHostToDevice);
