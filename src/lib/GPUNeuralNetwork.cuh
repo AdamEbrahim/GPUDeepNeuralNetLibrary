@@ -1,3 +1,6 @@
+#ifndef GPUNEURALNETWORK_H
+#define GPUNEURALNETWORK_H
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -24,3 +27,4 @@ class GPUNeuralNetwork {
         float learningRate;
 
 };
+#endif

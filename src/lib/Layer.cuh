@@ -1,3 +1,6 @@
+#ifndef LAYER_H
+#define LAYER_H
+
 #include "Matrix.cuh"
 
 class Layer { //interface for a NN layer
@@ -24,3 +27,5 @@ class Layer { //interface for a NN layer
 
 inline Layer::~Layer() {} //Inline definition of destructor, inline means sub the body of this function whenever
                           //the function is called. This means will just sub nothing whenever call Layer destructor
+
+#endif

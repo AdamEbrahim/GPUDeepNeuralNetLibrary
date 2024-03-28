@@ -4,7 +4,7 @@
 //Kernel functions to be run on GPU
 
 
-__global__ void SigmoidLayer::getActivation(float* w, float* x, float* a, float* b, int xDim, int yDim) {
+__global__ void getActivation(float* w, float* x, float* a, float* b, int xDim, int yDim) {
     int rowIndexW = (threadIdx.x + blockDim.x * blockIdx.x); //only doing 1D thread blocks because of matrix multiplication
     int stride = gridDim.x * blockDim.x;
 
@@ -19,6 +19,10 @@ __global__ void SigmoidLayer::getActivation(float* w, float* x, float* a, float*
         a[i] = (1.0 / (1.0 + std::exp(-1.0 * a[i])));
     }
 
+}
+
+void SigmoidLayer::callGetActivation(dim3 blocks, dim3 threads, float* w, float* x, float* a, float* b, int xDim, int yDim) {
+    getActivation<<<blocks, threads>>>(w, x, a, b, xDim, yDim);
 }
 
 
@@ -37,7 +41,8 @@ void SigmoidLayer::forwardPass(Matrix& prevLayerActivations) {
     int num_threads = 1;
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
-    getActivation<<<blocks, threads>>>(w, x, a, b, this->Weights.xDim, this->Weights.yDim);
+    
+    callGetActivation(blocks, threads, w, x, a, b, this->Weights.xDim, this->Weights.yDim);
     cudaDeviceSynchronize();
 }
 

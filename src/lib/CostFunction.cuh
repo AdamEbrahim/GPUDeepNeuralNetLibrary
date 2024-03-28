@@ -1,3 +1,6 @@
+#ifndef COSTFUNCTION_H
+#define COSTFUNCTION_H
+
 #include <string>
 #include <vector>
 
@@ -18,3 +21,4 @@ class CostFunction {
         
 
 };
+#endif

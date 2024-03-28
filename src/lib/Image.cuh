@@ -1,3 +1,6 @@
+#ifndef IMAGE_H
+#define IMAGE_H
+
 #include <string>
 
 class Image {
@@ -5,5 +8,6 @@ class Image {
     
 
     public:
-    Image(std::string pathToImage);
+        Image(std::string pathToImage);
 };
+#endif

@@ -10,9 +10,13 @@ objects = $(BUILD)main.o $(BUILD)CostFunction.o $(BUILD)GPUNeuralNetwork.o $(BUI
 main: $(objects)
 	$(CC) -o main $^
 
-$(BUILD)%.o : $(SOURCE)%.cu $(DEPS)
+$(BUILD)main.o : src/main.cu $(DEPS)
 	@mkdir -p $(BUILD)
-	$(CC) -c $> -o $@
+	$(CC) -c $< -o $@
+
+
+$(BUILD)%.o : $(SOURCE)%.cu $(DEPS)
+	$(CC) -c $< -o $@
 
 clean : 
 	rm main $(objects)
