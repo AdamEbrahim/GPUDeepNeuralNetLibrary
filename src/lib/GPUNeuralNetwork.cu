@@ -1,5 +1,6 @@
 #include "GPUNeuralNetwork.cuh"
 #include "SigmoidLayer.cuh"
+#include <random>
 
 GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate} 
     {
@@ -53,18 +54,59 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
 
 //single training example, will change input layer activations array to be proper values
 void GPUNeuralNetwork::runTrainingExample() { 
-
+    std::cout << "hi" << std::endl;
 }
 
 //Mini batch will call runTrainingExample() on all training inputs in mini batch of size m, use that to perform gradient descent
-void GPUNeuralNetwork::runMiniBatch() {
-
+//inputData is a vector of size m, where each element inputData[m] is a vector of one training example's input layer encodings 
+void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData) {
+    int miniBatchSize = inputData.size();
+    for (int i = 0; i < inputData.size(); i++) {
+        std::cout << "[" << (*(inputData[i]))[0] << ", " << (*(inputData[i]))[1] << ", " << (*(inputData[i]))[2] << "]" << std::endl;
+    }
 }
 
-void GPUNeuralNetwork::runEpoch() { 
+void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, int miniBatchSize, std::default_random_engine& rng) {
+    std::shuffle(allTrainingData.begin(), allTrainingData.end(), rng);
 
+    for (int i = 0; i < allTrainingData.size(); i++) {
+        int currBatchIdx = i / miniBatchSize;
+        miniBatches[currBatchIdx].push_back(std::move(allTrainingData[i]));
+    }
+    //clear all the remaining nullptrs after move
+    allTrainingData.clear();
 }
 
-void GPUNeuralNetwork::trainNetwork(int numEpochs, int numTrainingExamples, int miniBatchSize) {
+void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, int miniBatchSize) {
+    int numMiniBatches = (allTrainingData.size() / miniBatchSize) + 1;
+    std::vector<std::vector<std::unique_ptr<std::vector<float> > > > miniBatches;
+    for (int i = 0; i < numMiniBatches; i++) {
+        miniBatches.push_back(std::vector<std::unique_ptr<std::vector<float> > >(0));
+    }
+    auto rd = std::random_device {}; //randomly seed the random generator used for vector shuffle
+    auto rng = std::default_random_engine {rd()}; //create a reusable instance of default random engine, rd() is function call operator overloading
+
+    for (int i = 0; i < numEpochs; i++) {
+        std::cout << "Beginning Epoch " << i << " of training:" << std::endl;
+
+        //Move everything from mini batch vectors back to allTrainingData vector
+        if (i != 0) {
+            for (int j = 0; j < numMiniBatches; j++) {
+                for (int k = 0; k < miniBatches[j].size(); k++) {
+                    allTrainingData.push_back(std::move(miniBatches[j][k]));
+                }
+                //clear all the remaining nullptrs after move
+                miniBatches[j].clear();
+            }
+
+        }
+
+        randomizeMiniBatches(allTrainingData, miniBatches, miniBatchSize, rng);
+        for (int j = 0; j < numMiniBatches; j++) {
+            std::cout << "Running Mini Batch " << j << std::endl;
+            runMiniBatch(miniBatches[j]);
+        }
+        
+    }
 
 }

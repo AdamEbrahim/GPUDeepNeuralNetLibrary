@@ -9,16 +9,17 @@
 
 class GPUNeuralNetwork {
     private:
-        void runEpoch();
-        void runMiniBatch();
+        void runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData);
         void runTrainingExample();
+
+        void randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, int miniBatchSize, std::default_random_engine& rng);
 
     public:
         GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate);
         ~GPUNeuralNetwork(); //destructor to free pointers in vector of layer*
         void initializeLayers(std::vector<std::string> layerTypes, std::vector<int> layerCounts);
 
-        void trainNetwork(int numEpochs, int numTrainingExamples, int miniBatchSize);
+        void trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, int miniBatchSize);
 
         std::vector<Layer*> layers;
         CostFunction costFunction;

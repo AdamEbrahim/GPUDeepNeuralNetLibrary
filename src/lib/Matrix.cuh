@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include <memory>
+#include <vector>
 
 class Matrix {
     private:

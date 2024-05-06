@@ -22,7 +22,7 @@ void Layer::initializeMatrices() {
         biases.valuesHost[i] = 0.0;
     }
 
-    cudaMemcpy(biases.valuesDevice, biases.valuesHost, biases.xDim * biases.yDim * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(biases.valuesDevice.get(), biases.valuesHost.get(), biases.xDim * biases.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
     //initialize weights to be random float
     //use a normal gaussian distribution, mean = 0, std_dev = 1 / sqrt(input_neurons). Weights can be negative.
@@ -32,6 +32,6 @@ void Layer::initializeMatrices() {
         weights.valuesHost[i] = dist(generator);
     }
 
-    cudaMemcpy(weights.valuesDevice, weights.valuesHost, weights.xDim * weights.yDim * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(weights.valuesDevice.get(), weights.valuesHost.get(), weights.xDim * weights.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
 }

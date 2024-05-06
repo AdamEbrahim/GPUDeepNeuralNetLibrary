@@ -37,13 +37,14 @@ void SigmoidLayer::forwardPass(Matrix& prevLayerActivations) {
     float* a = (this->outputActivation).valuesDevice.get();
 
     //figure out block/grid dimensions:
-    int num_blocks = 1;
-    int num_threads = 1;
+    int num_threads = 256; //just set 256 threads per block now; testing to do
+    int num_blocks = (this->weights.yDim / num_threads) + 1;
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
     
     callGetActivation(blocks, threads, w, x, a, b, this->Weights.xDim, this->Weights.yDim);
     cudaDeviceSynchronize();
+    cudaMemcpy(this->outputActivation.valuesHost.get(), this->outputActivation.valuesDevice.get(), this->outputActivation.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 void SigmoidLayer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) {
