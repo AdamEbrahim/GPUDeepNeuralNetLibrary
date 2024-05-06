@@ -84,8 +84,8 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
     for (int i = 0; i < numMiniBatches; i++) {
         miniBatches.push_back(std::vector<std::unique_ptr<std::vector<float> > >(0));
     }
-    auto rd = std::random_device {}; //randomly seed the random generator used for vector shuffle
-    auto rng = std::default_random_engine {rd()}; //create a reusable instance of default random engine, rd() is function call operator overloading
+
+    auto rng = std::default_random_engine {std::random_device {}()}; //create a reusable instance of default random engine, the () is function call operator overloading after instantiating the random device seed
 
     for (int i = 0; i < numEpochs; i++) {
         std::cout << "Beginning Epoch " << i << " of training:" << std::endl;

@@ -42,7 +42,7 @@ void SigmoidLayer::forwardPass(Matrix& prevLayerActivations) {
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
     
-    callGetActivation(blocks, threads, w, x, a, b, this->Weights.xDim, this->Weights.yDim);
+    callGetActivation(blocks, threads, w, x, a, b, this->weights.xDim, this->weights.yDim);
     cudaDeviceSynchronize();
     cudaMemcpy(this->outputActivation.valuesHost.get(), this->outputActivation.valuesDevice.get(), this->outputActivation.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }
