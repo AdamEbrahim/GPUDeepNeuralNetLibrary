@@ -1,5 +1,6 @@
 #include "GPUNeuralNetwork.cuh"
 #include "SigmoidLayer.cuh"
+#include <algorithm>
 #include <random>
 
 GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate} 
