@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
+#include "test2.cpp"
 
 // void test_unique_ptr_should_fail(std::vector<std::unique_ptr<int> > hi) {
 //     for (int i = 0; i < hi.size(); i++) {
@@ -88,20 +89,28 @@ int main() {
     // std::cout << *(tester2[0]) << std::endl;
     //std::cout << *(tester[0]) << std::endl; SEGFAULT BECAUSE TESTER[0] HAS BEEN MOVED TO TESTER2[0]. TESTER[0] IS NOW NULLPTR
 
-    std::vector<std::unique_ptr<std::vector<float> > > allTrainingData;
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{1, 2, 3}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{2, 3, 4}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{3, 4, 5}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{4, 5, 6}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{5, 6, 7}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{6, 7, 8}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{7, 8, 9}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{8, 9, 10}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{9, 10, 11}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{10, 11, 12}));
-    allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{11, 12, 13}));
+    // std::vector<std::unique_ptr<std::vector<float> > > allTrainingData;
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{1, 2, 3}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{2, 3, 4}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{3, 4, 5}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{4, 5, 6}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{5, 6, 7}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{6, 7, 8}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{7, 8, 9}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{8, 9, 10}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{9, 10, 11}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{10, 11, 12}));
+    // allTrainingData.push_back(std::unique_ptr<std::vector<float> > (new std::vector<float>{11, 12, 13}));
 
-    trainNetwork(3, allTrainingData, 4);
+    // trainNetwork(3, allTrainingData, 4);
+
+    std::vector<test2> hi;
+    hi.emplace_back(test2());
+    std::cout << *(hi[0].hi) << std::endl;
+
+    test2& Yo = hi[0];
+    *(Yo.hi) = 7.0;
+    std::cout << *(hi[0].hi) << std::endl;
 
     return 0;
 }

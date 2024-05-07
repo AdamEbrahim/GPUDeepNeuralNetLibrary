@@ -1,7 +1,9 @@
 #include "GPUNeuralNetwork.cuh"
 #include "SigmoidLayer.cuh"
+#include "Matrix.cuh"
 #include <algorithm>
 #include <random>
+#include <numeric>
 
 GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate} 
     {
@@ -15,7 +17,6 @@ GPUNeuralNetwork::~GPUNeuralNetwork() { //destructor
     for (int i = 0; i < this->layers.size(); i++) {
         delete this->layers[i];
     }
-    delete[] inputLayerActivations; 
 }
 
 void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std::vector<int> layerCounts) {
@@ -54,17 +55,54 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
 }
 
 //single training example, will change input layer activations array to be proper values
-void GPUNeuralNetwork::runTrainingExample() { 
-    std::cout << "hi" << std::endl;
+void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) { 
+    //set input layer activations
+
+    //forward pass through each layer of network
+
+    //obtain cost/loss of current training input and use it to compute error of the final layer
+
+    //backpropagate error through each layer of network
+
+    //Update gradient matrices
 }
 
 //Mini batch will call runTrainingExample() on all training inputs in mini batch of size m, use that to perform gradient descent
-//inputData is a vector of size m, where each element inputData[m] is a vector of one training example's input layer encodings 
-void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData) {
+//inputData is a vector of size m, where each element inputData[m] is a pointer to a vector of one training example's input layer encodings 
+void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) {
     int miniBatchSize = inputData.size();
-    for (int i = 0; i < inputData.size(); i++) {
-        std::cout << "[" << (*(inputData[i]))[0] << ", " << (*(inputData[i]))[1] << ", " << (*(inputData[i]))[2] << "]" << std::endl;
+    if (miniBatchSize == 0) {
+        return;
     }
+
+    //reinit running sum of gradients for each layer to 0
+    for (int i = 0; i < this->layers.size(); i++) {
+        Matrix& w = gradientCostWeight[i];
+        Matrix& b = gradientCostBias[i];
+
+        for (int j = 0; j < w.xDim * w.yDim; j++) {
+            w.valuesHost[j] = 0.0;
+        }
+
+        for (int j = 0; j < b.xDim * b.yDim; j++) {
+            b.valuesHost[j] = 0.0;
+        }
+
+        cudaMemcpy(w.valuesDevice.get(), w.valuesHost.get(), w.xDim * w.yDim * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(b.valuesDevice.get(), b.valuesHost.get(), b.xDim * b.yDim * sizeof(float), cudaMemcpyHostToDevice);
+    }
+
+    
+    for (int i = 0; i < miniBatchSize; i++) {
+        //std::cout << "[" << (*(inputData[i]))[0] << ", " << (*(inputData[i]))[1] << ", " << (*(inputData[i]))[2] << "]" << std::endl;
+        runTrainingExample(inputData[i], gradientCostWeight, gradientCostBias); //will update weight and bias gradients
+    }
+
+    //obtain average of the gradients after running all training inputs
+    //float avgWeightGradient = std::accumulate(gradientCostWeight.begin(), gradientCostWeight.end(), 0.0) / miniBatchSize;
+    //float avgBiasGradient = std::accumulate(gradientCostBias.begin(), gradientCostBias.end(), 0.0) / miniBatchSize;
+
+    //Update the weights and biases
 }
 
 void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, int miniBatchSize, std::default_random_engine& rng) {
@@ -87,6 +125,22 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 
     auto rng = std::default_random_engine {std::random_device {}()}; //create a reusable instance of default random engine, the () is function call operator overloading after instantiating the random device seed
 
+    //Matrices for each layer of network, keep a running sum of total gradients for each weight and bias in the layer as you go through each training data. Will be averaged after.
+    std::vector<Matrix> gradientCostWeight;
+    std::vector<Matrix> gradientCostBias;
+    for (int i = 0; i < this->layers.size(); i++) {
+        gradientCostWeight.emplace_back(Matrix((this->layers[i])->weights.xDim, (this->layers[i])->weights.yDim));
+        gradientCostBias.emplace_back(Matrix((this->layers[i])->biases.xDim, (this->layers[i])->biases.yDim));
+
+        Matrix& w = gradientCostWeight[i];
+        Matrix& b = gradientCostBias[i];
+
+        w.allocateHostMemory();
+        w.allocateCUDAMemory();
+        b.allocateHostMemory();
+        b.allocateCUDAMemory();
+    }
+    
     for (int i = 0; i < numEpochs; i++) {
         std::cout << "Beginning Epoch " << i << " of training:" << std::endl;
 
@@ -105,7 +159,7 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
         randomizeMiniBatches(allTrainingData, miniBatches, miniBatchSize, rng);
         for (int j = 0; j < numMiniBatches; j++) {
             std::cout << "Running Mini Batch " << j << std::endl;
-            runMiniBatch(miniBatches[j]);
+            runMiniBatch(miniBatches[j], gradientCostWeight, gradientCostBias);
         }
         
     }

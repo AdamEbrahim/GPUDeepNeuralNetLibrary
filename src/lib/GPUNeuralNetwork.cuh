@@ -10,8 +10,8 @@
 
 class GPUNeuralNetwork {
     private:
-        void runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData);
-        void runTrainingExample();
+        void runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias);
+        void runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias);
 
         void randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, int miniBatchSize, std::default_random_engine& rng);
 
@@ -25,7 +25,6 @@ class GPUNeuralNetwork {
         std::vector<Layer*> layers;
         CostFunction costFunction;
         int numInputLayerNeurons;
-        float* inputLayerActivations;
         float learningRate;
 
 };
