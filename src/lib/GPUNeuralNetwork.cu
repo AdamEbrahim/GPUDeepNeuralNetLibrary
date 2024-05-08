@@ -80,7 +80,10 @@ void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& 
 
     //obtain cost/loss of current training input and use it to compute error of the final layer
 
-    //backpropagate error through each layer of network
+    //backpropagate error through each layer of network to compute input error at each layer, starting with layer L-1
+    for (int i = this->layers.size() - 2; i >= 0; i--) {
+        this->layers[i]->backprop(this->layers[i+1]->inputError, this->layers[i+1]->weights);
+    }
 
     //Update gradient matrices
 }

@@ -2,12 +2,15 @@
 #include <random>
 #include <cmath>
 
-Layer::Layer(int prevNumNeurons, int numNeurons) : weights{prevNumNeurons, numNeurons}, biases{1, numNeurons}, outputActivation{1, numNeurons}, inputError{1, numNeurons}, numberNeurons{numNeurons}, prevLayerNumNeurons{prevNumNeurons} {
+Layer::Layer(int prevNumNeurons, int numNeurons) : weights{prevNumNeurons, numNeurons}, biases{1, numNeurons}, weightedInput{1, numNeurons}, outputActivation{1, numNeurons}, inputError{1, numNeurons}, numberNeurons{numNeurons}, prevLayerNumNeurons{prevNumNeurons} {
     weights.allocateHostMemory();
     weights.allocateCUDAMemory();
 
     biases.allocateHostMemory();
     biases.allocateCUDAMemory();
+
+    weightedInput.allocateHostMemory();
+    weightedInput.allocateCUDAMemory();
 
     outputActivation.allocateHostMemory();
     outputActivation.allocateCUDAMemory();
@@ -40,6 +43,7 @@ void Layer::forwardPass(Matrix& prevLayerActivations) {
     float* x = prevLayerActivations.valuesDevice.get(); //no need to cudaMemcpy, updated values will already be on device
     float* w = (this->weights).valuesDevice.get();
     float* b = (this->biases).valuesDevice.get();
+    float* z = (this->weightedInput).valuesDevice.get();
     float* a = (this->outputActivation).valuesDevice.get();
 
     //figure out block/grid dimensions:
@@ -48,15 +52,15 @@ void Layer::forwardPass(Matrix& prevLayerActivations) {
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
     
-    callGetActivation(blocks, threads, w, x, a, b, this->weights.xDim, this->weights.yDim);
+    callGetActivation(blocks, threads, w, x, a, b, z, this->weights.xDim, this->weights.yDim);
     cudaDeviceSynchronize();
     cudaMemcpy(this->outputActivation.valuesHost.get(), this->outputActivation.valuesDevice.get(), this->outputActivation.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
-void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) {
+void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights) {
     float* nextError = nextLayerError.valuesDevice.get();
     float* w = nextLayerWeights.valuesDevice.get();
-    float* z = prevLayerActivations.valuesDevice.get();
+    float* z = (this->weightedInput).valuesDevice.get();
     float* error = (this->inputError).valuesDevice.get();
 
     //figure out block/grid dimensions:
@@ -65,7 +69,7 @@ void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& p
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
 
-    callBackPropError();
+    callBackPropError(blocks, threads, nextError, w, z, error, nextLayerWeights.xDim, nextLayerWeights.yDim);
     cudaDeviceSynchronize();
     cudaMemcpy(this->inputError.valuesHost.get(), this->inputError.valuesDevice.get(), this->inputError.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }
