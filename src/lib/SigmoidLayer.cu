@@ -3,8 +3,7 @@
 #include "utils.cuh"
 #include <cmath>
 
-//Kernel functions to be run on GPU
-
+//Kernel and device functions to be run on GPU
 
 __global__ void getActivation(float* w, float* x, float* a, float* b, float* z, int xDim, int yDim) {
     int rowIndexW = (threadIdx.x + blockDim.x * blockIdx.x); //only doing 1D thread blocks because of matrix multiplication
