@@ -22,10 +22,11 @@ class GPUNeuralNetwork {
 
         void trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, int miniBatchSize);
 
-        std::vector<Layer*> layers;
+        std::vector<Layer*> layers; //default initialization is fine for this vector, no need to specify non-default initialization in constructor's member initializer list
         CostFunction costFunction;
         int numInputLayerNeurons;
         float learningRate;
+        Matrix inputActivations;
 
 };
 #endif

@@ -8,10 +8,12 @@ class Layer { //interface for a NN layer
 
     protected:
         Layer(int prevNumNeurons, int numNeurons);
-        virtual void forwardPass(Matrix& prevLayerActivations) = 0;
-        virtual void backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) = 0;
+        virtual void callGetActivation(dim3 blocks, dim3 threads, float* w, float* x, float* a, float* b, int xDim, int yDim) = 0;
+        virtual void callBackPropError(dim3 blocks, dim3 threads, float* nextError, float* w, float* z, float* error, int xDim, int yDim) = 0;
 
     public:
+        void forwardPass(Matrix& prevLayerActivations);
+        void backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations);
         void initializeMatrices();
         virtual ~Layer() = 0; //Destructor
 

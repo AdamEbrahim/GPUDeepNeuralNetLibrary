@@ -1,4 +1,6 @@
 #include "SigmoidLayer.cuh"
+#include "Matrix.cuh"
+#include "utils.cuh"
 #include <cmath>
 
 //Kernel functions to be run on GPU
@@ -10,14 +12,25 @@ __global__ void getActivation(float* w, float* x, float* a, float* b, int xDim, 
 
     //W*x
     for (int i = rowIndexW; i < yDim; i = i + stride) {
+        a[i] = 0; //reinitialize to 0
         for (int j = 0; j < xDim; j++) {
             a[i] += w[(i * xDim) + j] * x[j];
         }
         //+b
         a[i] += b[i];
         //Sigmoid(Z)
-        a[i] = (1.0 / (1.0 + std::exp(-1.0 * a[i])));
+        a[i] = sigmoid(a[i]);
     }
+
+}
+
+//used for backpropagation
+__global__ void backPropError(float* nextError, float* w, float* z, float* error, int xDim, int yDim) {
+
+}
+
+//constructor
+SigmoidLayer::SigmoidLayer(int prevNumNeurons, int numNeurons) : Layer{prevNumNeurons, numNeurons} {
 
 }
 
@@ -25,28 +38,6 @@ void SigmoidLayer::callGetActivation(dim3 blocks, dim3 threads, float* w, float*
     getActivation<<<blocks, threads>>>(w, x, a, b, xDim, yDim);
 }
 
-
-SigmoidLayer::SigmoidLayer(int prevNumNeurons, int numNeurons) : Layer{prevNumNeurons, numNeurons} {
-
-}
-
-void SigmoidLayer::forwardPass(Matrix& prevLayerActivations) {
-    float* x = prevLayerActivations.valuesDevice.get(); //no need to cudaMemcpy, updated values will already be on device
-    float* w = (this->weights).valuesDevice.get();
-    float* b = (this->biases).valuesDevice.get();
-    float* a = (this->outputActivation).valuesDevice.get();
-
-    //figure out block/grid dimensions:
-    int num_threads = 256; //just set 256 threads per block now; testing to do
-    int num_blocks = (this->weights.yDim / num_threads) + 1;
-    dim3 blocks(num_blocks);
-    dim3 threads(num_threads);
-    
-    callGetActivation(blocks, threads, w, x, a, b, this->weights.xDim, this->weights.yDim);
-    cudaDeviceSynchronize();
-    cudaMemcpy(this->outputActivation.valuesHost.get(), this->outputActivation.valuesDevice.get(), this->outputActivation.yDim * sizeof(float), cudaMemcpyDeviceToHost);
-}
-
-void SigmoidLayer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& prevLayerActivations) {
-
+void SigmoidLayer::callBackPropError(dim3 blocks, dim3 threads, float* nextError, float* w, float* z, float* error, int xDim, int yDim) {
+    backPropError<<<blocks, threads>>>(nextError, w, z, error, xDim, yDim);
 }

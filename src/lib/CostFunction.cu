@@ -11,3 +11,18 @@ CostFunction::CostFunction(std::string type) {
 CostFunction::CostFunction() { //default constructor, default to BCE cost function
     this->type = "BCE";
 }
+
+double CostFunction::getCostBCE() {
+    double val;
+
+    this->currentCost = val;
+    return val;
+}
+
+double CostFunction::getCost() {
+    if (this->type == "BCE") {
+        return this->getCostBCE();
+    } else {
+        return 0.0;
+    }
+}

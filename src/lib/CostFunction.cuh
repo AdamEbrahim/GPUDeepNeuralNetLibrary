@@ -17,7 +17,7 @@ class CostFunction {
         double getCost();
         double getErrorFinalLayer();
 
-        double currentCost;
+        double currentCost; //default initialized to 0
         
 
 };

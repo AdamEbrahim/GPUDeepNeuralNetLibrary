@@ -5,9 +5,11 @@
 #include <random>
 #include <numeric>
 
-GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate} 
+GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate}, inputActivations{1, inputLayerNeurons} 
     {
-
+        //allocate host and cuda memory for input layer activations
+        inputActivations.allocateHostMemory();
+        inputActivations.allocateCUDAMemory();
     }
     catch (std::string type) {
         std::cout << "Invalid cost function: " << type << std::endl;
@@ -57,8 +59,24 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
 //single training example, will change input layer activations array to be proper values
 void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) { 
     //set input layer activations
+    uint32_t len = this->inputActivations.xDim * this->inputActivations.yDim;
+    if (len != (*exampleInputData).size()) {
+        std::cout << "error: improperly sized training input" << std::endl;
+    }
+
+    for (int i = 0; i < len; i++) {
+        this->inputActivations.valuesHost[i] = (*exampleInputData)[i];
+    }
+    cudaMemcpy(this->inputActivations.valuesDevice.get(), this->inputActivations.valuesHost.get(), this->inputActivations.xDim * this->inputActivations.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
     //forward pass through each layer of network
+    for (int i = 0; i < this->layers.size(); i++) {
+        if (i == 0) {
+            this->layers[i]->forwardPass(this->inputActivations);
+        } else {
+            this->layers[i]->forwardPass(this->layers[i-1]->outputActivation);
+        }
+    }
 
     //obtain cost/loss of current training input and use it to compute error of the final layer
 
