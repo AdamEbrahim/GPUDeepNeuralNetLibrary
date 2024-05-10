@@ -19,7 +19,7 @@ class Layer { //interface for a NN layer
 
         Matrix weights;
         Matrix biases;
-        Matrix weightedInput;
+        Matrix outputActivationPrime;
         Matrix outputActivation;
         Matrix inputError;
 

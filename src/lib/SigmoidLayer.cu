@@ -27,7 +27,7 @@ __global__ void getActivation(float* w, float* x, float* a, float* b, float* z, 
         //+b
         a[i] += b[i];
         //Sigmoid(Z)
-        z[i] = a[i]; //set weighted input matrix before applying activation function
+        z[i] = sigmoidPrime(a[i]);
         a[i] = sigmoid(a[i]);
     }
 
@@ -45,7 +45,7 @@ __global__ void backPropError(float* nextError, float* w, float* z, float* error
             error[i] += w[(j * xDim) + i] * nextError[j];
         }
         //hadamard product with sigmoid prime w.r.t weighted input
-        error[i] = error[i] * sigmoidPrime(z[i]);
+        error[i] = error[i] * z[i];
     }
 }
 

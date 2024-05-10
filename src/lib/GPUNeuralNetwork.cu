@@ -5,11 +5,14 @@
 #include <random>
 #include <numeric>
 
-GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, learningRate{learningRate}, inputActivations{1, inputLayerNeurons} 
+GPUNeuralNetwork::GPUNeuralNetwork(std::string costFunc, int inputLayerNeurons, int numOutputClasses, float learningRate) try : costFunction(costFunc), numInputLayerNeurons{inputLayerNeurons}, numOutputClasses{numOutputClasses}, learningRate{learningRate}, inputActivations{1, inputLayerNeurons}, trueOutput{1, numOutputClasses} 
     {
         //allocate host and cuda memory for input layer activations
         inputActivations.allocateHostMemory();
         inputActivations.allocateCUDAMemory();
+        //allocate host and cuda memory for true output vector
+        trueOutput.allocateHostMemory();
+        trueOutput.allocateCUDAMemory();
     }
     catch (std::string type) {
         std::cout << "Invalid cost function: " << type << std::endl;
@@ -21,6 +24,7 @@ GPUNeuralNetwork::~GPUNeuralNetwork() { //destructor
     }
 }
 
+//final layer count will no matter what be same as numOutputClasses, no matter what is given
 void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std::vector<int> layerCounts) {
     try {
         if (layerTypes.size() != layerCounts.size()) {
@@ -37,8 +41,10 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
             }
 
             Layer* createdLayer;
+            //final layer count will no matter what be same as numOutputClasses, no matter what is given
+            int count = (i == layerTypes.size() - 1) ? this->numOutputClasses : layerCounts[i];
             if (layerTypes[i] == "Sigmoid") {
-                createdLayer = new SigmoidLayer(prevLayerNeurons, layerCounts[i]);
+                createdLayer = new SigmoidLayer(prevLayerNeurons, count);
             } else {
                 throw(layerTypes[i]);
             }
@@ -57,7 +63,7 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
 }
 
 //single training example, will change input layer activations array to be proper values
-void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) { 
+void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::unique_ptr<std::vector<float> >& trueLabel, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) { 
     //set input layer activations
     uint32_t len = this->inputActivations.xDim * this->inputActivations.yDim;
     if (len != (*exampleInputData).size()) {
@@ -68,6 +74,17 @@ void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& 
         this->inputActivations.valuesHost[i] = (*exampleInputData)[i];
     }
     cudaMemcpy(this->inputActivations.valuesDevice.get(), this->inputActivations.valuesHost.get(), this->inputActivations.xDim * this->inputActivations.yDim * sizeof(float), cudaMemcpyHostToDevice);
+
+    //set true output label vector one hot encoded
+    uint32_t len2 = this->trueOutput.xDim * this->trueOutput.yDim;
+    if (len2 != (*trueLabel).size()) {
+        std::cout << "error: improperly sized true label vector" << std::endl;
+    }
+
+    for (int i = 0; i < len2; i++) {
+        this->trueOutput.valuesHost[i] = (*trueLabel)[i];
+    }
+    cudaMemcpy(this->trueOutput.valuesDevice.get(), this->trueOutput.valuesHost.get(), this->trueOutput.xDim * this->trueOutput.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
     //forward pass through each layer of network
     for (int i = 0; i < this->layers.size(); i++) {
@@ -90,7 +107,7 @@ void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& 
 
 //Mini batch will call runTrainingExample() on all training inputs in mini batch of size m, use that to perform gradient descent
 //inputData is a vector of size m, where each element inputData[m] is a pointer to a vector of one training example's input layer encodings 
-void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) {
+void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<float> > >& inputData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) {
     int miniBatchSize = inputData.size();
     if (miniBatchSize == 0) {
         return;
@@ -116,7 +133,7 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
     
     for (int i = 0; i < miniBatchSize; i++) {
         //std::cout << "[" << (*(inputData[i]))[0] << ", " << (*(inputData[i]))[1] << ", " << (*(inputData[i]))[2] << "]" << std::endl;
-        runTrainingExample(inputData[i], gradientCostWeight, gradientCostBias); //will update weight and bias gradients
+        runTrainingExample(inputData[i], trueLabels[i], gradientCostWeight, gradientCostBias); //will update weight and bias gradients
     }
 
     //obtain average of the gradients after running all training inputs
@@ -126,22 +143,31 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
     //Update the weights and biases
 }
 
-void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, int miniBatchSize, std::default_random_engine& rng) {
-    std::shuffle(allTrainingData.begin(), allTrainingData.end(), rng);
+void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& trueLabelsBatches, int miniBatchSize, std::default_random_engine& rng) {
+    std::vector<int> shuffleIndexes (allTrainingData.size(), 0);
+    for (int i = 0; i < shuffleIndexes.size(); i++) {
+        shuffleIndexes[i] = i;
+    }
+    std::shuffle(shuffleIndexes.begin(), shuffleIndexes.end(), rng);
+    //std::shuffle(allTrainingData.begin(), allTrainingData.end(), rng);
 
     for (int i = 0; i < allTrainingData.size(); i++) {
         int currBatchIdx = i / miniBatchSize;
-        miniBatches[currBatchIdx].push_back(std::move(allTrainingData[i]));
+        miniBatches[currBatchIdx].push_back(std::move(allTrainingData[shuffleIndexes[i]]));
+        trueLabelsBatches[currBatchIdx].push_back(std::move(trueLabels[shuffleIndexes[i]]));
     }
     //clear all the remaining nullptrs after move
     allTrainingData.clear();
+    trueLabels.clear();
 }
 
-void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, int miniBatchSize) {
+void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, int miniBatchSize) {
     int numMiniBatches = (allTrainingData.size() / miniBatchSize) + 1;
     std::vector<std::vector<std::unique_ptr<std::vector<float> > > > miniBatches;
+    std::vector<std::vector<std::unique_ptr<std::vector<float> > > > trueLabelsBatches;
     for (int i = 0; i < numMiniBatches; i++) {
         miniBatches.push_back(std::vector<std::unique_ptr<std::vector<float> > >(0));
+        trueLabelsBatches.push_back(std::vector<std::unique_ptr<std::vector<float> > >(0));
     }
 
     auto rng = std::default_random_engine {std::random_device {}()}; //create a reusable instance of default random engine, the () is function call operator overloading after instantiating the random device seed
@@ -170,17 +196,19 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
             for (int j = 0; j < numMiniBatches; j++) {
                 for (int k = 0; k < miniBatches[j].size(); k++) {
                     allTrainingData.push_back(std::move(miniBatches[j][k]));
+                    trueLabels.push_back(std::move(trueLabelsBatches[j][k]));
                 }
                 //clear all the remaining nullptrs after move
                 miniBatches[j].clear();
+                trueLabelsBatches[j].clear();
             }
 
         }
 
-        randomizeMiniBatches(allTrainingData, miniBatches, miniBatchSize, rng);
+        randomizeMiniBatches(allTrainingData, miniBatches, trueLabels, trueLabelsBatches, miniBatchSize, rng);
         for (int j = 0; j < numMiniBatches; j++) {
             std::cout << "Running Mini Batch " << j << std::endl;
-            runMiniBatch(miniBatches[j], gradientCostWeight, gradientCostBias);
+            runMiniBatch(miniBatches[j], trueLabelsBatches[j], gradientCostWeight, gradientCostBias);
         }
         
     }
