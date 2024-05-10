@@ -1,9 +1,18 @@
 #include "SigmoidLayer.cuh"
 #include "Matrix.cuh"
-#include "utils.cuh"
 #include <cmath>
 
 //Kernel and device functions to be run on GPU
+//sigmoid
+__device__ float sigmoid(float z) {
+    return (1.0 / (1.0 + std::exp(-1.0 * z)));
+}
+
+//sigmoid prime
+__device__ float sigmoidPrime(float z) {
+    float a = (1.0 + std::exp(-1.0 * z));
+    return (std::exp(-1.0 * z)) / (pow(a, 2));
+}
 
 __global__ void getActivation(float* w, float* x, float* a, float* b, float* z, int xDim, int yDim) {
     int rowIndexW = (threadIdx.x + blockDim.x * blockIdx.x); //only doing 1D thread blocks because of matrix multiplication
@@ -40,9 +49,16 @@ __global__ void backPropError(float* nextError, float* w, float* z, float* error
     }
 }
 
+//a = activation pointer, b = activationPrime pointer
+__global__ void getFunctionPointers(Layer::act* a, Layer::act* b) {
+    *a = sigmoid;
+    *b = sigmoidPrime;
+}
+
 //constructor
 SigmoidLayer::SigmoidLayer(int prevNumNeurons, int numNeurons) : Layer{prevNumNeurons, numNeurons} {
-
+    //called after base class (Layer) constructor called, so device memory already allocated
+    getFunctionPointers<<<1,1>>>(this->activation.get(), this->activationPrime.get());
 }
 
 void SigmoidLayer::callGetActivation(dim3 blocks, dim3 threads, float* w, float* x, float* a, float* b, float* z, int xDim, int yDim) {

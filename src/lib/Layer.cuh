@@ -26,6 +26,11 @@ class Layer { //interface for a NN layer
         int numberNeurons;
         int prevLayerNumNeurons;
 
+        typedef float (*act)(float);
+
+        std::shared_ptr<act> activation; //function pointer to device function activation; set in device
+        std::shared_ptr<act> activationPrime;  //function pointer to device function activationPrime; set in device
+
 };
 
 inline Layer::~Layer() {} //Inline definition of destructor, inline means sub the body of this function whenever

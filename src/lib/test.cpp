@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
-#include "test2.cpp"
+#include "test2.h"
 
 // void test_unique_ptr_should_fail(std::vector<std::unique_ptr<int> > hi) {
 //     for (int i = 0; i < hi.size(); i++) {
@@ -111,6 +111,8 @@ int main() {
     test2& Yo = hi[0];
     *(Yo.hi) = 7.0;
     std::cout << *(hi[0].hi) << std::endl;
+
+    std::cout << (*(hi[0].act))(2.0) << std::endl;
 
     return 0;
 }

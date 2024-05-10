@@ -17,6 +17,11 @@ Layer::Layer(int prevNumNeurons, int numNeurons) : weights{prevNumNeurons, numNe
 
     inputError.allocateHostMemory();
     inputError.allocateCUDAMemory();
+
+    act* t = nullptr;
+    cudaMalloc(&t, 2*sizeof(act));
+    activation = std::shared_ptr<act>(t, [&](act* ptr) {cudaFree(ptr);});
+    activationPrime = std::shared_ptr<act>(&t[1], [&](act* ptr) {cudaFree(ptr);});
 }
 
 void Layer::initializeMatrices() {

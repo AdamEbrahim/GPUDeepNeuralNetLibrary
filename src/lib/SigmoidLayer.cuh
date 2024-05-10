@@ -16,5 +16,6 @@ class SigmoidLayer: public Layer {
 
 __global__ void getActivation(float* w, float* x, float* a, float* b, float* z, int xDim, int yDim);
 __global__ void backPropError(float* nextError, float* w, float* z, float* error, int xDim, int yDim);
+__global__ void getFunctionPointers();
 
 #endif
