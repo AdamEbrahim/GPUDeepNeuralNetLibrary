@@ -62,11 +62,12 @@ void Layer::forwardPass(Matrix& prevLayerActivations) {
     cudaMemcpy(this->outputActivation.valuesHost.get(), this->outputActivation.valuesDevice.get(), this->outputActivation.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
-void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights) {
+void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& gradientCostBias) {
     float* nextError = nextLayerError.valuesDevice.get();
     float* w = nextLayerWeights.valuesDevice.get();
     float* z = (this->outputActivationPrime).valuesDevice.get();
     float* error = (this->inputError).valuesDevice.get();
+    float* g_b = gradientCostBias.valuesDevice.get()
 
     //figure out block/grid dimensions:
     int num_threads = 256; //just set 256 threads per block now; testing to do
@@ -74,7 +75,7 @@ void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights) {
     dim3 blocks(num_blocks);
     dim3 threads(num_threads);
 
-    callBackPropError(blocks, threads, nextError, w, z, error, nextLayerWeights.xDim, nextLayerWeights.yDim);
+    callBackPropError(blocks, threads, nextError, w, z, error, g_b, nextLayerWeights.xDim, nextLayerWeights.yDim);
     cudaDeviceSynchronize();
     cudaMemcpy(this->inputError.valuesHost.get(), this->inputError.valuesDevice.get(), this->inputError.yDim * sizeof(float), cudaMemcpyDeviceToHost);
 }

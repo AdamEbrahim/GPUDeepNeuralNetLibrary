@@ -34,7 +34,7 @@ __global__ void getActivation(float* w, float* x, float* a, float* b, float* z, 
 }
 
 //used for backpropagation
-__global__ void backPropError(float* nextError, float* w, float* z, float* error, int xDim, int yDim) {
+__global__ void backPropError(float* nextError, float* w, float* z, float* error, float* g_b, int xDim, int yDim) {
     int rowIndex = threadIdx.x + (blockIdx.x * blockDim.x);
     int stride = blockDim.x * gridDim.x;
 
@@ -46,6 +46,7 @@ __global__ void backPropError(float* nextError, float* w, float* z, float* error
         }
         //hadamard product with sigmoid prime w.r.t weighted input
         error[i] = error[i] * z[i];
+        g_b[i] += error[i]; //gradient bias update for the training input = error
     }
 }
 
@@ -65,6 +66,6 @@ void SigmoidLayer::callGetActivation(dim3 blocks, dim3 threads, float* w, float*
     getActivation<<<blocks, threads>>>(w, x, a, b, z, xDim, yDim);
 }
 
-void SigmoidLayer::callBackPropError(dim3 blocks, dim3 threads, float* nextError, float* w, float* z, float* error, int xDim, int yDim) {
-    backPropError<<<blocks, threads>>>(nextError, w, z, error, xDim, yDim);
+void SigmoidLayer::callBackPropError(dim3 blocks, dim3 threads, float* nextError, float* w, float* z, float* error, float* g_b, int xDim, int yDim) {
+    backPropError<<<blocks, threads>>>(nextError, w, z, error, g_b, xDim, yDim);
 }

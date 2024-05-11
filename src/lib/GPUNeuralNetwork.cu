@@ -95,14 +95,15 @@ void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& 
         }
     }
 
-    //obtain cost/loss of current training input and use it to compute error of the final layer
+    //compute error of the final layer, update cost w.r.t bias gradient
+    this->costFunction.getErrorFinalLayer(this->layers[this->layers.size() - 1], this->trueOutput, gradientCostBias[gradientCostBias.size() - 1]);
 
-    //backpropagate error through each layer of network to compute input error at each layer, starting with layer L-1
+    //backpropagate error through each layer of network to compute input error at each layer, starting with layer L-1, update cost w.r.t bias gradient
     for (int i = this->layers.size() - 2; i >= 0; i--) {
-        this->layers[i]->backprop(this->layers[i+1]->inputError, this->layers[i+1]->weights);
+        this->layers[i]->backprop(this->layers[i+1]->inputError, this->layers[i+1]->weights, gradientCostBias[i]);
     }
 
-    //Update gradient matrices
+    //Update cost w.r.t weight gradient matrix
 }
 
 //Mini batch will call runTrainingExample() on all training inputs in mini batch of size m, use that to perform gradient descent
