@@ -22,5 +22,5 @@ class CostFunction {
 
 };
 
-__global__ void getErrorFinalLayerBCE(float* error, float* a, float* z, float* y, float* g_b, int xDim, int yDim)
+__global__ void getErrorFinalLayerBCE(float* error, float* a, float* z, float* y, float* g_b, int xDim, int yDim);
 #endif

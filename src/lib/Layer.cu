@@ -67,7 +67,7 @@ void Layer::backprop(Matrix& nextLayerError, Matrix& nextLayerWeights, Matrix& g
     float* w = nextLayerWeights.valuesDevice.get();
     float* z = (this->outputActivationPrime).valuesDevice.get();
     float* error = (this->inputError).valuesDevice.get();
-    float* g_b = gradientCostBias.valuesDevice.get()
+    float* g_b = gradientCostBias.valuesDevice.get();
 
     //figure out block/grid dimensions:
     int num_threads = 256; //just set 256 threads per block now; testing to do

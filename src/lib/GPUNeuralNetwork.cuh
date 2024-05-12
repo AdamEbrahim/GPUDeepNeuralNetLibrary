@@ -31,7 +31,7 @@ class GPUNeuralNetwork {
         Matrix trueOutput; //one hot vector encoding
 
 };
-__global__ void costWeightGradientExample(float* error, float* prev_a, float* g_w, int xDim, int yDim)
-__global__ void updateWeights(float* w, float* g_w, int m, float learningRate, int xDim, int yDim)
-__global__ void updateBiases(float* b, float* g_b, int m, float learningRate, int xDim, int yDim)
+__global__ void costWeightGradientExample(float* error, float* prev_a, float* g_w, int xDim, int yDim);
+__global__ void updateWeights(float* w, float* g_w, int m, float learningRate, int xDim, int yDim);
+__global__ void updateBiases(float* b, float* g_b, int m, float learningRate, int xDim, int yDim);
 #endif

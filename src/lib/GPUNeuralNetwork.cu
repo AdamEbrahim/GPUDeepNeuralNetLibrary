@@ -215,7 +215,7 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
         num_threadsx = 16;
         num_blocksx = std::ceil((1.0 * gradientCostWeight[i].xDim) / num_threadsx);
         num_blocksy = std::ceil((1.0 * gradientCostWeight[i].yDim) / num_threadsy);
-        threads = dim3(num_threadsx, num_threadsy)
+        threads = dim3(num_threadsx, num_threadsy);
         blocks = dim3(num_blocksx, num_blocksy);
 
         updateWeights<<<blocks, threads>>>(this->layers[i]->weights.valuesDevice.get(), gradientCostWeight[i].valuesDevice.get(), miniBatchSize, this->learningRate, gradientCostWeight[i].xDim, gradientCostWeight[i].yDim);
@@ -224,7 +224,7 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
 
         num_threadsx = 256;
         num_blocksx = std::ceil((1.0 * gradientCostBias[i].yDim) / num_threadsx);
-        threads = dim3(num_threadsx)
+        threads = dim3(num_threadsx);
         blocks = dim3(num_blocksx);
         updateBiases<<<blocks, threads>>>(this->layers[i]->biases.valuesDevice.get(), gradientCostBias[i].valuesDevice.get(), miniBatchSize, this->learningRate, gradientCostBias[i].xDim, gradientCostBias[i].yDim);
         cudaDeviceSynchronize(); 
