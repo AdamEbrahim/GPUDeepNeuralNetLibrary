@@ -31,4 +31,5 @@ class GPUNeuralNetwork {
         Matrix trueOutput; //one hot vector encoding
 
 };
+__global__ void costWeightGradientExample(float* error, float* prev_a, float* g_w, int xDim, int yDim)
 #endif

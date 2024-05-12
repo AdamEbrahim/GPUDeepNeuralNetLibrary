@@ -62,6 +62,21 @@ void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std
 
 }
 
+__global__ void costWeightGradientExample(float* error, float* prev_a, float* g_w, int xDim, int yDim) {
+    int rowIndex = threadIdx.y + blockDim.y * blockIdx.y;
+    int stride_y = blockDim.y * gridDim.y;
+    int colIndex = threadIdx.x + blockDim.x + blockIdx.x;
+    int stride_x = blockDim.x * gridDim.x;
+
+    for (int i = rowIndex; i < yDim; i = i + stride_y) {
+        for (int j = colIndex; j < xDim; j = j + stride_x) {
+            g_w[(i * xDim) + j] = error[i] * prev_a[j];
+        }
+    }
+
+
+}
+
 //single training example, will change input layer activations array to be proper values
 void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& exampleInputData, std::unique_ptr<std::vector<float> >& trueLabel, std::vector<Matrix>& gradientCostWeight, std::vector<Matrix>& gradientCostBias) { 
     //set input layer activations
@@ -95,15 +110,42 @@ void GPUNeuralNetwork::runTrainingExample(std::unique_ptr<std::vector<float> >& 
         }
     }
 
-    //compute error of the final layer, update cost w.r.t bias gradient
-    this->costFunction.getErrorFinalLayer(this->layers[this->layers.size() - 1], this->trueOutput, gradientCostBias[gradientCostBias.size() - 1]);
+    //backpropagate error through each layer of network to compute input error at each layer, update cost w.r.t bias gradient
+    float* error;
+    float* prev_a;
+    float* g_w;
 
-    //backpropagate error through each layer of network to compute input error at each layer, starting with layer L-1, update cost w.r.t bias gradient
-    for (int i = this->layers.size() - 2; i >= 0; i--) {
-        this->layers[i]->backprop(this->layers[i+1]->inputError, this->layers[i+1]->weights, gradientCostBias[i]);
+    int num_threadsx = 16; //just set 256 threads per block now; testing to do.
+    int num_threadsy = 16;
+    int num_blocksx;
+    int num_blocksy;
+    dim3 blocks;
+    dim3 threads = dim3(num_threadsx, num_threadsy); //2d thread dimensions per block
+
+    for (int i = this->layers.size() - 1; i >= 0; i--) {
+        if (i == this->layers.size() - 1) { //looking at final layer
+            //compute error of the final layer, update cost w.r.t bias gradient
+            this->costFunction.getErrorFinalLayer(this->layers[i], this->trueOutput, gradientCostBias[i]);
+
+        } else {
+            //backprop error, update cost w.r.t bias gradient
+            this->layers[i]->backprop(this->layers[i+1]->inputError, this->layers[i+1]->weights, gradientCostBias[i]);
+
+        }
+
+        //Update cost w.r.t weight gradient matrix
+        error = this->layers[i]->inputError.valuesDevice.get();
+        prev_a = (i == 0) ? this->inputActivations.valuesDevice.get() : this->layers[i-1]->outputActivation.valuesDevice.get();
+        g_w = gradientCostWeight[i].valuesDevice.get();
+        //figure out block/grid dimensions:
+        num_blocksx = std::ceil((1.0 * gradientCostWeight[i].xDim) / num_threadsx);
+        num_blocksy = std::ceil((1.0 * gradientCostWeight[i].yDim) / num_threadsy);
+        blocks = dim3(num_blocksx, num_blocksy); //2d block dimensions in grid
+        costWeightGradientExample<<<blocks, threads>>>(error, prev_a, g_w, gradientCostWeight[i].xDim, gradientCostWeight[i].yDim); //Update cost w.r.t weight gradient matrix
+        cudaDeviceSynchronize(); 
+        //no need to cudamemcpy to host until later
     }
 
-    //Update cost w.r.t weight gradient matrix
 }
 
 //Mini batch will call runTrainingExample() on all training inputs in mini batch of size m, use that to perform gradient descent
@@ -137,11 +179,8 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
         runTrainingExample(inputData[i], trueLabels[i], gradientCostWeight, gradientCostBias); //will update weight and bias gradients
     }
 
-    //obtain average of the gradients after running all training inputs
-    //float avgWeightGradient = std::accumulate(gradientCostWeight.begin(), gradientCostWeight.end(), 0.0) / miniBatchSize;
-    //float avgBiasGradient = std::accumulate(gradientCostBias.begin(), gradientCostBias.end(), 0.0) / miniBatchSize;
+    //obtain average of the gradients after running all training inputs and update all weights and biases
 
-    //Update the weights and biases
 }
 
 void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& miniBatches, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, std::vector<std::vector<std::unique_ptr<std::vector<float> > > >& trueLabelsBatches, int miniBatchSize, std::default_random_engine& rng) {
