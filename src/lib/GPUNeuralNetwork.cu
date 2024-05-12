@@ -70,10 +70,34 @@ __global__ void costWeightGradientExample(float* error, float* prev_a, float* g_
 
     for (int i = rowIndex; i < yDim; i = i + stride_y) {
         for (int j = colIndex; j < xDim; j = j + stride_x) {
-            g_w[(i * xDim) + j] = error[i] * prev_a[j];
+            g_w[(i * xDim) + j] += error[i] * prev_a[j];
         }
     }
 
+
+}
+
+__global__ void updateWeights(float* w, float* g_w, int m, float learningRate, int xDim, int yDim) {
+    int rowIndex = threadIdx.y + blockDim.y * blockIdx.y;
+    int stride_y = blockDim.y * gridDim.y;
+    int colIndex = threadIdx.x + blockDim.x + blockIdx.x;
+    int stride_x = blockDim.x * gridDim.x;
+
+    for (int i = rowIndex; i < yDim; i = i + stride_y) {
+        for (int j = colIndex; j < xDim; j = j + stride_x) {
+            w[(i * xDim) + j] = w[(i * xDim) + j] - ((learningRate / (1.0 * m)) * g_w[(i * xDim) + j]);
+        }
+    }
+
+}
+
+__global__ void updateBiases(float* b, float* g_b, int m, float learningRate, int xDim, int yDim) {
+    int rowIndex = threadIdx.x + blockDim.x * blockIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    for (int i = rowIndex; i < yDim; i = i + stride) {
+        b[i] = b[i] - ((learningRate / (1.0 * m)) * g_b[i]);
+    }
 
 }
 
@@ -180,6 +204,32 @@ void GPUNeuralNetwork::runMiniBatch(std::vector<std::unique_ptr<std::vector<floa
     }
 
     //obtain average of the gradients after running all training inputs and update all weights and biases
+    int num_threadsx = 16; //just set 256 threads per block now; testing to do.
+    int num_threadsy = 16;
+    dim3 threads; //2d thread dimensions per block
+    int num_blocksx;
+    int num_blocksy;
+    dim3 blocks; //2d block dimensions in grid
+
+    for (int i = 0; i < this->layers.size(); i++) {
+        num_threadsx = 16;
+        num_blocksx = std::ceil((1.0 * gradientCostWeight[i].xDim) / num_threadsx);
+        num_blocksy = std::ceil((1.0 * gradientCostWeight[i].yDim) / num_threadsy);
+        threads = dim3(num_threadsx, num_threadsy)
+        blocks = dim3(num_blocksx, num_blocksy);
+
+        updateWeights<<<blocks, threads>>>(this->layers[i]->weights.valuesDevice.get(), gradientCostWeight[i].valuesDevice.get(), miniBatchSize, this->learningRate, gradientCostWeight[i].xDim, gradientCostWeight[i].yDim);
+        cudaDeviceSynchronize(); 
+        cudaMemcpy(this->layers[i]->weights.valuesHost.get(), this->layers[i]->weights.valuesDevice.get(), this->layers[i]->weights.xDim * this->layers[i]->weights.yDim * sizeof(float), cudaMemcpyDeviceToHost);
+
+        num_threadsx = 256;
+        num_blocksx = std::ceil((1.0 * gradientCostBias[i].yDim) / num_threadsx);
+        threads = dim3(num_threadsx)
+        blocks = dim3(num_blocksx);
+        updateBiases<<<blocks, threads>>>(this->layers[i]->biases.valuesDevice.get(), gradientCostBias[i].valuesDevice.get(), miniBatchSize, this->learningRate, gradientCostBias[i].xDim, gradientCostBias[i].yDim);
+        cudaDeviceSynchronize(); 
+        cudaMemcpy(this->layers[i]->biases.valuesHost.get(), this->layers[i]->biases.valuesDevice.get(), this->layers[i]->biases.xDim * this->layers[i]->biases.yDim * sizeof(float), cudaMemcpyDeviceToHost);
+    }
 
 }
 

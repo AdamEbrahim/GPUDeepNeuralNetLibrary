@@ -52,9 +52,8 @@ void CostFunction::getErrorFinalLayer(Layer* finalLayer, Matrix& trueLabel, Matr
 }
 
 double CostFunction::getCostBCE() {
-    double val;
+    double val = 1.0;
 
-    this->currentCost = val;
     return val;
 }
 
