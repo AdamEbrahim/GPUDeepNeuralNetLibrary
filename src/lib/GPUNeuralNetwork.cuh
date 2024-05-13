@@ -20,7 +20,7 @@ class GPUNeuralNetwork {
         ~GPUNeuralNetwork(); //destructor to free pointers in vector of layer*
         void initializeLayers(std::vector<std::string>& layerTypes, std::vector<int>& layerCounts);
 
-        void trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, int miniBatchSize);
+        void trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, std::vector<std::unique_ptr<std::vector<float> > >& allTestingData, std::vector<std::unique_ptr<std::vector<float> > >& testingLabels, int miniBatchSize);
         void testNetwork(std::vector<std::unique_ptr<std::vector<float> > >& testingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels);
 
         std::vector<Layer*> layers; //default initialization is fine for this vector, no need to specify non-default initialization in constructor's member initializer list

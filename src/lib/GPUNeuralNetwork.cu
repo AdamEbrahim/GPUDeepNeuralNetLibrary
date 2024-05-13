@@ -251,7 +251,7 @@ void GPUNeuralNetwork::randomizeMiniBatches(std::vector<std::unique_ptr<std::vec
     trueLabels.clear();
 }
 
-void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, int miniBatchSize) {
+void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<std::vector<float> > >& allTrainingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels, std::vector<std::unique_ptr<std::vector<float> > >& allTestingData, std::vector<std::unique_ptr<std::vector<float> > >& testingLabels, int miniBatchSize) {
     int numMiniBatches = (allTrainingData.size() / miniBatchSize) + 1;
     std::vector<std::vector<std::unique_ptr<std::vector<float> > > > miniBatches;
     std::vector<std::vector<std::unique_ptr<std::vector<float> > > > trueLabelsBatches;
@@ -297,9 +297,12 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 
         randomizeMiniBatches(allTrainingData, miniBatches, trueLabels, trueLabelsBatches, miniBatchSize, rng);
         for (int j = 0; j < numMiniBatches; j++) {
-            std::cout << "Running Mini Batch " << j << std::endl;
+            //std::cout << "Running Mini Batch " << j << std::endl;
             runMiniBatch(miniBatches[j], trueLabelsBatches[j], gradientCostWeight, gradientCostBias);
         }
+
+        //At end of epoch, get testing accuracy
+        this->testNetwork(allTestingData, testingLabels);
         
     }
 
