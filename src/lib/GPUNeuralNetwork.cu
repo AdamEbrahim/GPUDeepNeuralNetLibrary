@@ -297,7 +297,7 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 
         randomizeMiniBatches(allTrainingData, miniBatches, trueLabels, trueLabelsBatches, miniBatchSize, rng);
         for (int j = 0; j < numMiniBatches; j++) {
-            std::cout << "Running Mini Batch " << j << std::endl;
+            //std::cout << "Running Mini Batch " << j << std::endl;
             runMiniBatch(miniBatches[j], trueLabelsBatches[j], gradientCostWeight, gradientCostBias);
         }
         
@@ -309,28 +309,25 @@ void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float
     std::cout << "Testing Network..." << std::endl;
 
     for (int j = 0; j < testingData.size(); j++) {
-        std::unique_ptr<std::vector<float> > exampleInputData = testingData[j];
-        std::unique_ptr<std::vector<float> > trueLabel = trueLabels[j];
-
         //set input layer activations
         uint32_t len = this->inputActivations.xDim * this->inputActivations.yDim;
-        if (len != (*exampleInputData).size()) {
+        if (len != (*(testingData[j])).size()) {
             std::cout << "error: improperly sized testing input" << std::endl;
         }
 
         for (int i = 0; i < len; i++) {
-            this->inputActivations.valuesHost[i] = (*exampleInputData)[i];
+            this->inputActivations.valuesHost[i] = (*(testingData[j]))[i];
         }
         cudaMemcpy(this->inputActivations.valuesDevice.get(), this->inputActivations.valuesHost.get(), this->inputActivations.xDim * this->inputActivations.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
         //set true output label vector one hot encoded
         uint32_t len2 = this->trueOutput.xDim * this->trueOutput.yDim;
-        if (len2 != (*trueLabel).size()) {
+        if (len2 != (*(trueLabels[j])).size()) {
             std::cout << "error: improperly sized true label vector" << std::endl;
         }
 
         for (int i = 0; i < len2; i++) {
-            this->trueOutput.valuesHost[i] = (*trueLabel)[i];
+            this->trueOutput.valuesHost[i] = (*(trueLabels[j]))[i];
         }
         cudaMemcpy(this->trueOutput.valuesDevice.get(), this->trueOutput.valuesHost.get(), this->trueOutput.xDim * this->trueOutput.yDim * sizeof(float), cudaMemcpyHostToDevice);
 
@@ -346,7 +343,7 @@ void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float
         //final layer output activations is predicted class
         std::cout << "TESTING EXAMPLE #" << j << std::endl;
         float* predictedValues = this->layers[this->layers.size() - 1]->outputActivation.valuesHost.get();
-        std::vector<float>& actualValues = *trueLabel;
+        std::vector<float>& actualValues = *(trueLabels[j]);
 
         std::cout << "predicted: [";
         for (int i = 0; i < actualValues.size(); i++) {

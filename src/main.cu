@@ -134,10 +134,10 @@ std::vector<std::unique_ptr<std::vector<float> > >* read_mnist_label_data(std::s
 }
 
 int main() {
-    std::vector<std::unique_ptr<std::vector<float> > >* trainingImageData = read_mnist_image_data("data/train-images-idx3-ubyte");
-    std::vector<std::unique_ptr<std::vector<float> > >* trainingLabelData = read_mnist_label_data("data/train-labels-idx1-ubyte");
-    std::vector<std::unique_ptr<std::vector<float> > >* testingImageData = read_mnist_image_data("data/t10k-images-idx3-ubyte");
-    std::vector<std::unique_ptr<std::vector<float> > >* testingLabelData = read_mnist_label_data("data/t10k-labels-idx1-ubyte");
+    std::vector<std::unique_ptr<std::vector<float> > >* trainingImageData = read_mnist_image_data("src/data/train-images-idx3-ubyte");
+    std::vector<std::unique_ptr<std::vector<float> > >* trainingLabelData = read_mnist_label_data("src/data/train-labels-idx1-ubyte");
+    std::vector<std::unique_ptr<std::vector<float> > >* testingImageData = read_mnist_image_data("src/data/t10k-images-idx3-ubyte");
+    std::vector<std::unique_ptr<std::vector<float> > >* testingLabelData = read_mnist_label_data("src/data/t10k-labels-idx1-ubyte");
 
     std::vector<std::string> layerTypes;
     layerTypes.emplace_back("Sigmoid");
