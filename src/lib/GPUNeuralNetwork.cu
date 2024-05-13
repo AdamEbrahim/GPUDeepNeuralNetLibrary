@@ -25,7 +25,7 @@ GPUNeuralNetwork::~GPUNeuralNetwork() { //destructor
 }
 
 //final layer count will no matter what be same as numOutputClasses, no matter what is given
-void GPUNeuralNetwork::initializeLayers(std::vector<std::string> layerTypes, std::vector<int> layerCounts) {
+void GPUNeuralNetwork::initializeLayers(std::vector<std::string>& layerTypes, std::vector<int>& layerCounts) {
     try {
         if (layerTypes.size() != layerCounts.size()) {
             throw(layerTypes.size());
@@ -302,5 +302,9 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
         }
         
     }
+
+}
+
+void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float> > >& testingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels) {
 
 }

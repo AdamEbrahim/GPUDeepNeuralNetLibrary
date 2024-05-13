@@ -10,7 +10,7 @@ objects = $(BUILD)main.o $(BUILD)CostFunction.o $(BUILD)GPUNeuralNetwork.o $(BUI
 main: $(objects)
 	$(CC) -o main $^
 
-$(BUILD)main.o : src/main.cu $(DEPS)
+$(BUILD)main.o : src/main.cpp $(DEPS)
 	@mkdir -p $(BUILD)
 	$(CC) -c $< -o $@
 
