@@ -306,5 +306,66 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 }
 
 void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float> > >& testingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels) {
+    std::cout << "Testing Network..." << std::endl;
+
+    for (int j = 0; j < testingData.size(); j++) {
+        std::unique_ptr<std::vector<float> > exampleInputData = testingData[j];
+        std::unique_ptr<std::vector<float> > trueLabel = trueLabels[j];
+
+        //set input layer activations
+        uint32_t len = this->inputActivations.xDim * this->inputActivations.yDim;
+        if (len != (*exampleInputData).size()) {
+            std::cout << "error: improperly sized testing input" << std::endl;
+        }
+
+        for (int i = 0; i < len; i++) {
+            this->inputActivations.valuesHost[i] = (*exampleInputData)[i];
+        }
+        cudaMemcpy(this->inputActivations.valuesDevice.get(), this->inputActivations.valuesHost.get(), this->inputActivations.xDim * this->inputActivations.yDim * sizeof(float), cudaMemcpyHostToDevice);
+
+        //set true output label vector one hot encoded
+        uint32_t len2 = this->trueOutput.xDim * this->trueOutput.yDim;
+        if (len2 != (*trueLabel).size()) {
+            std::cout << "error: improperly sized true label vector" << std::endl;
+        }
+
+        for (int i = 0; i < len2; i++) {
+            this->trueOutput.valuesHost[i] = (*trueLabel)[i];
+        }
+        cudaMemcpy(this->trueOutput.valuesDevice.get(), this->trueOutput.valuesHost.get(), this->trueOutput.xDim * this->trueOutput.yDim * sizeof(float), cudaMemcpyHostToDevice);
+
+        //forward pass through each layer of network
+        for (int i = 0; i < this->layers.size(); i++) {
+            if (i == 0) {
+                this->layers[i]->forwardPass(this->inputActivations);
+            } else {
+                this->layers[i]->forwardPass(this->layers[i-1]->outputActivation);
+            }
+        }
+
+        //final layer output activations is predicted class
+        std::cout << "TESTING EXAMPLE #" << j << std::endl;
+        float* predictedValues = this->layers[this->layers.size() - 1]->outputActivation.valuesHost.get();
+        std::vector<float>& actualValues = *trueLabel;
+
+        std::cout << "predicted: [";
+        for (int i = 0; i < actualValues.size(); i++) {
+            if (i == actualValues.size() - 1) {
+                std::cout << predictedValues[i] << "]" << std::endl;
+            } else {
+                std::cout << predictedValues[i] << ", ";
+            }
+        }
+
+        std::cout << "actual: [";
+        for (int i = 0; i < actualValues.size(); i++) {
+            if (i == actualValues.size() - 1) {
+                std::cout << actualValues[i] << "]" << std::endl;
+            } else {
+                std::cout << actualValues[i] << ", ";
+            }
+        }
+
+    }
 
 }
