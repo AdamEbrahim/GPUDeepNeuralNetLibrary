@@ -297,7 +297,7 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 
         randomizeMiniBatches(allTrainingData, miniBatches, trueLabels, trueLabelsBatches, miniBatchSize, rng);
         for (int j = 0; j < numMiniBatches; j++) {
-            //std::cout << "Running Mini Batch " << j << std::endl;
+            std::cout << "Running Mini Batch " << j << std::endl;
             runMiniBatch(miniBatches[j], trueLabelsBatches[j], gradientCostWeight, gradientCostBias);
         }
         
@@ -308,6 +308,7 @@ void GPUNeuralNetwork::trainNetwork(int numEpochs, std::vector<std::unique_ptr<s
 void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float> > >& testingData, std::vector<std::unique_ptr<std::vector<float> > >& trueLabels) {
     std::cout << "Testing Network..." << std::endl;
 
+    int totalCorrect = 0;
     for (int j = 0; j < testingData.size(); j++) {
         //set input layer activations
         uint32_t len = this->inputActivations.xDim * this->inputActivations.yDim;
@@ -341,28 +342,54 @@ void GPUNeuralNetwork::testNetwork(std::vector<std::unique_ptr<std::vector<float
         }
 
         //final layer output activations is predicted class
-        std::cout << "TESTING EXAMPLE #" << j << std::endl;
+        //std::cout << "TESTING EXAMPLE #" << j << std::endl;
         float* predictedValues = this->layers[this->layers.size() - 1]->outputActivation.valuesHost.get();
         std::vector<float>& actualValues = *(trueLabels[j]);
 
-        std::cout << "predicted: [";
+        int predictedLabel = 0;
+        float predictedLabelValue = -1.0;
         for (int i = 0; i < actualValues.size(); i++) {
-            if (i == actualValues.size() - 1) {
-                std::cout << predictedValues[i] << "]" << std::endl;
-            } else {
-                std::cout << predictedValues[i] << ", ";
+            if (predictedValues[i] > predictedLabelValue) {
+                predictedLabelValue = predictedValues[i];
+                predictedLabel = i;
             }
         }
 
-        std::cout << "actual: [";
+        int actualLabel = 0;
         for (int i = 0; i < actualValues.size(); i++) {
-            if (i == actualValues.size() - 1) {
-                std::cout << actualValues[i] << "]" << std::endl;
-            } else {
-                std::cout << actualValues[i] << ", ";
+            if (actualValues[i] == 1.0) {
+                actualLabel = i;
+                break;
             }
+
         }
+
+        if (predictedLabel == actualLabel) {
+            totalCorrect++;
+        }
+
+        // std::cout << "predicted: [";
+        // for (int i = 0; i < actualValues.size(); i++) {
+        //     if (i == actualValues.size() - 1) {
+        //         std::cout << predictedValues[i] << "]" << std::endl;
+        //     } else {
+        //         std::cout << predictedValues[i] << ", ";
+        //     }
+        // }
+
+        // std::cout << "actual: [";
+        // for (int i = 0; i < actualValues.size(); i++) {
+        //     if (i == actualValues.size() - 1) {
+        //         std::cout << actualValues[i] << "]" << std::endl;
+        //     } else {
+        //         std::cout << actualValues[i] << ", ";
+        //     }
+        // }
 
     }
+
+    float accuracy = (1.0 * totalCorrect) / testingData.size();
+    std::cout << "Total testing accuracy:" << std::endl;
+    std::cout << accuracy << std::endl;
 
 }

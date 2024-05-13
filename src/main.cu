@@ -60,17 +60,6 @@ std::vector<std::unique_ptr<std::vector<float> > >* read_mnist_image_data(std::s
                 }
             }
         }
-
-        //now that all data is read:
-
-        //print all data
-        // for (int i = 0; i < (*allTrainingData).size(); i++) {
-        //     std::cout << "Training data #" << i << std::endl;
-        //     for (int j = 0; j < (*((*allTrainingData)[i])).size(); j++) {
-        //         std::cout << (*((*allTrainingData)[i]))[j] << std::endl;
-        //     }
-
-        // }
         
     } else {
         std::cout << "unable to read file" << std::endl;
@@ -108,23 +97,7 @@ std::vector<std::unique_ptr<std::vector<float> > >* read_mnist_label_data(std::s
             file.read((char*)&temp,sizeof(temp));
             (*image_data)[temp] = 1; //set the true label in the vector to be 1
 
-            // std::cout << "first true label: " << std::endl;
-            // for (int j = 0; j < (*image_data).size(); j++) {
-            //     std::cout << (*image_data)[j] << std::endl;
-            // }
-
         }
-
-        //now that all data is read:
-
-        //print all data
-        // for (int i = 0; i < (*trueLabels).size(); i++) {
-        //     std::cout << "Training label #" << i << std::endl;
-        //     for (int j = 0; j < (*((*trueLabels)[i])).size(); j++) {
-        //         std::cout << (*((*trueLabels)[i]))[j] << std::endl;
-        //     }
-
-        // }
         
     } else {
         std::cout << "unable to read file" << std::endl;
@@ -141,14 +114,16 @@ int main() {
 
     std::vector<std::string> layerTypes;
     layerTypes.emplace_back("Sigmoid");
+    layerTypes.emplace_back("Sigmoid");
     layerTypes.emplace_back("Sigmoid"); //final layer = sigmoid, coupled with binary cross entropy loss function
     std::vector<int> layerCounts;
-    layerCounts.emplace_back(100);
+    layerCounts.emplace_back(50);
+    layerCounts.emplace_back(30);
     layerCounts.emplace_back(10);
 
     GPUNeuralNetwork test("BCE", (*((*trainingImageData)[0])).size(), (*((*trainingLabelData)[0])).size(), 3.0);
     test.initializeLayers(layerTypes, layerCounts);
-    test.trainNetwork(3, *trainingImageData, *trainingLabelData, 10);
+    test.trainNetwork(4, *trainingImageData, *trainingLabelData, 10);
     test.testNetwork(*testingImageData, *testingLabelData);
 
     delete trainingImageData;
